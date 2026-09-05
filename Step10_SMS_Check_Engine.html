@@ -1,0 +1,796 @@
+<div id="app"></div>
+<style>
+  :root{
+    --navy:#16233d; --navy2:#1f3864; --accent:#3563a8; --accent2:#5b8bd6;
+    --ink:#1b2330; --sub:#5b6472; --line:#e2e6ec; --bg:#f7f8fa; --card:#ffffff;
+    --ok:#1c7a4d; --ok-bg:#e8f6ee; --warn:#a1590a; --warn-bg:#fdf1e2;
+    --bad:#b3261e; --bad-bg:#fbe9e8; --mute:#8a92a0;
+  }
+  *{box-sizing:border-box;}
+  #app{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color:var(--ink); background:var(--bg); min-height:100%;
+    display:flex; flex-direction:column; gap:16px; padding:4px;
+  }
+  h1{font-size:20px; margin:0; letter-spacing:-0.01em;}
+  h2{font-size:15px; margin:0 0 4px 0; color:var(--navy2);}
+  .sub{color:var(--sub); font-size:13px; line-height:1.5;}
+  .header{
+    background:linear-gradient(135deg,var(--navy),var(--navy2));
+    color:#fff; border-radius:14px; padding:18px 20px; display:flex; flex-direction:column; gap:6px;
+  }
+  .header .tag{font-size:11px; letter-spacing:.04em; color:#b9c8e6; text-transform:uppercase;}
+  .header .sub{color:#c7d3ea;}
+  .tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:2px;}
+  .tab{
+    flex:0 0 auto; padding:9px 14px; border-radius:9px; border:1px solid var(--line);
+    background:var(--card); color:var(--sub); font-size:13px; font-weight:600; cursor:pointer;
+    white-space:nowrap;
+  }
+  .tab.active{background:var(--navy2); color:#fff; border-color:var(--navy2);}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px;
+  }
+  .grid-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px;}
+  .stat{
+    background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+  }
+  .stat .n{font-size:22px; font-weight:700; color:var(--navy2); line-height:1.2;}
+  .stat .l{font-size:12px; color:var(--sub); margin-top:2px;}
+  .stat.ok .n{color:var(--ok);} .stat.warn .n{color:var(--warn);} .stat.bad .n{color:var(--bad);}
+  label{display:block; font-size:12.5px; font-weight:600; color:var(--navy2); margin-bottom:5px;}
+  textarea, input[type=text], select{
+    width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 11px;
+    font-size:13.5px; font-family:inherit; background:#fff; color:var(--ink);
+  }
+  textarea{resize:vertical; min-height:96px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px;}
+  .row{display:flex; gap:12px; flex-wrap:wrap;}
+  .row > *{flex:1 1 220px;}
+  .field{margin-bottom:12px;}
+  .btn{
+    appearance:none; border:none; border-radius:9px; padding:10px 16px; font-size:13.5px; font-weight:600;
+    cursor:pointer; background:var(--navy2); color:#fff; transition:background .15s;
+  }
+  .btn:hover{background:var(--accent);}
+  .btn.secondary{background:#fff; color:var(--navy2); border:1px solid var(--line);}
+  .btn.secondary:hover{background:var(--bg);}
+  .btn.danger{background:#fff; color:var(--bad); border:1px solid #f0c6c3;}
+  .btn.danger:hover{background:var(--bad-bg);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .file-drop{
+    border:1.5px dashed var(--line); border-radius:10px; padding:16px; text-align:center; color:var(--sub);
+    font-size:13px; cursor:pointer; background:#fbfcfd;
+  }
+  .file-drop:hover{border-color:var(--accent2); color:var(--accent);}
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th{
+    text-align:left; padding:8px 10px; background:var(--navy2); color:#fff; font-weight:600;
+    position:sticky; top:0; white-space:nowrap;
+  }
+  td{padding:7px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+  tr:nth-child(even) td{background:#fafbfd;}
+  .table-wrap{overflow:auto; max-height:420px; border:1px solid var(--line); border-radius:10px;}
+  .pill{display:inline-block; padding:2px 9px; border-radius:99px; font-size:11.5px; font-weight:700;}
+  .pill.ok{background:var(--ok-bg); color:var(--ok);}
+  .pill.warn{background:var(--warn-bg); color:var(--warn);}
+  .pill.bad{background:var(--bad-bg); color:var(--bad);}
+  .pill.mute{background:#eef0f3; color:var(--mute);}
+  .toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:var(--navy);
+    color:#fff; padding:10px 18px; border-radius:99px; font-size:13px; box-shadow:0 6px 20px rgba(0,0,0,.2);
+    z-index:50; opacity:0; pointer-events:none; transition:opacity .2s, bottom .2s;
+  }
+  .toast.show{opacity:1; bottom:26px;}
+  .empty{text-align:center; padding:34px 16px; color:var(--sub); font-size:13px;}
+  .note{font-size:12px; color:var(--mute); margin-top:8px; line-height:1.5;}
+  .badge-shared{
+    display:inline-flex; align-items:center; gap:5px; font-size:11px; color:#c7d3ea; background:rgba(255,255,255,.1);
+    padding:3px 9px; border-radius:99px; width:fit-content;
+  }
+  .search-row{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;}
+  .search-row input{flex:1 1 200px;}
+  .loading{display:flex; align-items:center; gap:8px; color:var(--sub); font-size:13px; padding:14px 0;}
+  .spinner{width:14px; height:14px; border-radius:50%; border:2px solid var(--line); border-top-color:var(--accent2); animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .col-sm{width:1%;}
+</style>
+<script>
+(function(){
+  const STORE_KEY = "step10_sms_main_db_v1";
+  const SHARED = true; // team-shared database
+
+  const state = {
+    db: new Map(), // phone -> record
+    tab: "dashboard",
+    loading: true,
+    loadError: null,
+    checkResults: null,
+    checkSummary: null,
+    lastToast: null,
+  };
+
+  // ---------- record shape ----------
+  // { phone, specialty, segment, registered(bool), optOut(bool), lastInvited(ms|null), lastSegment(str), totalSent(int) }
+
+  function newRecord(phone){
+    return { phone, specialty:"", segment:"", registered:false, optOut:false, lastInvited:null, lastSegment:"", totalSent:0 };
+  }
+
+  function normalizePhone(raw){
+    if(!raw) return "";
+    let p = String(raw).trim().replace(/[\\s\\-\\(\\)]/g,"");
+    return p;
+  }
+
+  // ---------- serialize / deserialize (compact CSV, no header) ----------
+  function serializeDB(){
+    const lines = [];
+    for(const r of state.db.values()){
+      lines.push([
+        r.phone,
+        (r.specialty||"").replace(/[,\\n]/g," "),
+        (r.segment||"").replace(/[,\\n]/g," "),
+        r.registered ? 1 : 0,
+        r.optOut ? 1 : 0,
+        r.lastInvited || "",
+        (r.lastSegment||"").replace(/[,\\n]/g," "),
+        r.totalSent || 0
+      ].join(","));
+    }
+    return lines.join("\\n");
+  }
+
+  function deserializeDB(text){
+    const m = new Map();
+    if(!text) return m;
+    const lines = text.split("\\n");
+    for(const line of lines){
+      if(!line.trim()) continue;
+      const parts = line.split(",");
+      if(parts.length < 8) continue;
+      const [phone, specialty, segment, registered, optOut, lastInvited, lastSegment, totalSent] = parts;
+      m.set(phone, {
+        phone, specialty, segment,
+        registered: registered === "1",
+        optOut: optOut === "1",
+        lastInvited: lastInvited ? Number(lastInvited) : null,
+        lastSegment,
+        totalSent: Number(totalSent) || 0
+      });
+    }
+    return m;
+  }
+
+  async function loadDB(){
+    state.loading = true; render();
+    try{
+      const res = await window.storage.get(STORE_KEY, SHARED);
+      state.db = res && res.value ? deserializeDB(res.value) : new Map();
+      state.loadError = null;
+    }catch(e){
+      state.db = new Map();
+      state.loadError = null; // treat missing key as empty DB, not an error
+    }
+    state.loading = false;
+    render();
+  }
+
+  async function saveDB(){
+    try{
+      const csv = serializeDB();
+      const res = await window.storage.set(STORE_KEY, csv, SHARED);
+      if(!res) throw new Error("no result");
+      return true;
+    }catch(e){
+      toast("⚠ Save failed — try again");
+      return false;
+    }
+  }
+
+  function toast(msg){
+    state.lastToast = msg;
+    render();
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(()=>{ state.lastToast = null; render(); }, 3200);
+  }
+
+  // ---------- CSV helpers ----------
+  function parseLines(text){
+    return text.split(/\\r?\\n/).map(l=>l.trim()).filter(Boolean);
+  }
+  function parseCSVRow(line){
+    return line.split(",").map(s=>s.trim());
+  }
+
+  function readFileAsText(file){
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = ()=>resolve(r.result);
+      r.onerror = ()=>reject(new Error("read failed"));
+      r.readAsText(file);
+    });
+  }
+
+  // ---------- business logic ----------
+  const DAY_MS = 24*60*60*1000;
+
+  function computeStats(){
+    let total=0, registered=0, optOut=0, invited24=0;
+    const bySegment = {};
+    const now = Date.now();
+    for(const r of state.db.values()){
+      total++;
+      if(r.registered) registered++;
+      if(r.optOut) optOut++;
+      if(r.lastInvited && (now - r.lastInvited) < DAY_MS) invited24++;
+      const seg = r.segment || "(unassigned)";
+      bySegment[seg] = (bySegment[seg]||0) + 1;
+    }
+    return { total, registered, optOut, invited24, bySegment };
+  }
+
+  function distinctSegments(){
+    const s = new Set();
+    for(const r of state.db.values()) if(r.segment) s.add(r.segment);
+    return Array.from(s).sort();
+  }
+
+  function evaluateRecord(r){
+    const now = Date.now();
+    if(r.optOut) return { action:"skip", reason:"Opted out" };
+    if(r.registered) return { action:"skip", reason:"Already registered" };
+    if(r.lastInvited && (now - r.lastInvited) < DAY_MS) return { action:"skip", reason:"Sent < 24h ago" };
+    return { action:"send", reason:"Clear to send" };
+  }
+
+  function hoursSince(ts){
+    if(!ts) return null;
+    return Math.round((Date.now()-ts)/(60*60*1000));
+  }
+
+  // ---------- import main database ----------
+  // expected columns: phone, specialty, segment  (segment optional)
+  function importDatabase(text){
+    const lines = parseLines(text);
+    let added=0, updated=0, skipped=0;
+    for(const line of lines){
+      const parts = parseCSVRow(line);
+      const phone = normalizePhone(parts[0]);
+      if(!phone || !/^[0-9+]{6,15}$/.test(phone)) { skipped++; continue; }
+      // skip an obvious header row
+      if(/phone/i.test(phone)) { skipped++; continue; }
+      const specialty = parts[1] || "";
+      const segment = parts[2] || "";
+      if(state.db.has(phone)){
+        const rec = state.db.get(phone);
+        if(specialty) rec.specialty = specialty;
+        if(segment) rec.segment = segment;
+        updated++;
+      } else {
+        const rec = newRecord(phone);
+        rec.specialty = specialty;
+        rec.segment = segment;
+        state.db.set(phone, rec);
+        added++;
+      }
+    }
+    return { added, updated, skipped };
+  }
+
+  // ---------- mark as sent ----------
+  function recordSend(text, title){
+    const lines = parseLines(text);
+    let updated=0, created=0, skipped=0;
+    const now = Date.now();
+    for(const line of lines){
+      const phone = normalizePhone(parseCSVRow(line)[0]);
+      if(!phone || !/^[0-9+]{6,15}$/.test(phone)) { skipped++; continue; }
+      if(/phone/i.test(phone)) { skipped++; continue; }
+      let rec = state.db.get(phone);
+      if(!rec){ rec = newRecord(phone); state.db.set(phone, rec); created++; }
+      else updated++;
+      rec.lastInvited = now;
+      rec.lastSegment = title || rec.lastSegment;
+      rec.totalSent = (rec.totalSent||0) + 1;
+    }
+    return { updated, created, skipped };
+  }
+
+  // ---------- mark registered / opted out ----------
+  function markFlag(text, flagName){
+    const lines = parseLines(text);
+    let updated=0, created=0, skipped=0;
+    for(const line of lines){
+      const phone = normalizePhone(parseCSVRow(line)[0]);
+      if(!phone || !/^[0-9+]{6,15}$/.test(phone)) { skipped++; continue; }
+      if(/phone/i.test(phone)) { skipped++; continue; }
+      let rec = state.db.get(phone);
+      if(!rec){ rec = newRecord(phone); state.db.set(phone, rec); created++; }
+      else updated++;
+      rec[flagName] = true;
+    }
+    return { updated, created, skipped };
+  }
+
+  // ---------- check engine ----------
+  function runCheck(candidatePhones, segmentFilter){
+    let candidates = [];
+    if(candidatePhones && candidatePhones.length){
+      candidates = candidatePhones.map(normalizePhone).filter(p=>/^[0-9+]{6,15}$/.test(p));
+      candidates = Array.from(new Set(candidates)); // de-dup
+    } else {
+      for(const r of state.db.values()){
+        if(!segmentFilter || segmentFilter==="__all__" || r.segment === segmentFilter) candidates.push(r.phone);
+      }
+    }
+    const results = [];
+    let send=0, skipReg=0, skipRecent=0, skipOptOut=0, notFound=0;
+    for(const phone of candidates){
+      let rec = state.db.get(phone);
+      if(!rec){ rec = newRecord(phone); notFound++; }
+      const ev = evaluateRecord(rec);
+      if(ev.action==="send") send++;
+      else if(ev.reason==="Already registered") skipReg++;
+      else if(ev.reason==="Sent < 24h ago") skipRecent++;
+      else if(ev.reason==="Opted out") skipOptOut++;
+      results.push({
+        phone: rec.phone, specialty: rec.specialty, segment: rec.segment,
+        registered: rec.registered, optOut: rec.optOut,
+        invited: !!rec.lastInvited, hoursSince: hoursSince(rec.lastInvited),
+        lastSegment: rec.lastSegment, totalSent: rec.totalSent,
+        action: ev.action, reason: ev.reason
+      });
+    }
+    return { results, summary:{ total: candidates.length, send, skipReg, skipRecent, skipOptOut, notFound } };
+  }
+
+  function downloadCSV(filename, header, rows){
+    const lines = [header.join(","), ...rows.map(r=>r.join(","))];
+    const blob = new Blob([lines.join("\\n")], {type:"text/csv"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ================= RENDER =================
+  function el(html){ const d=document.createElement("div"); d.innerHTML=html; return d.firstElementChild; }
+
+  function render(){
+    const root = document.getElementById("app");
+    root.innerHTML = "";
+    root.appendChild(renderHeader());
+    root.appendChild(renderTabs());
+
+    if(state.loading){
+      const c = el('<div class="card"><div class="loading"><div class="spinner"></div>Loading database…</div></div>');
+      root.appendChild(c);
+    } else {
+      if(state.tab==="dashboard") root.appendChild(renderDashboard());
+      if(state.tab==="check") root.appendChild(renderCheck());
+      if(state.tab==="sent") root.appendChild(renderSent());
+      if(state.tab==="registrations") root.appendChild(renderRegistrations());
+    }
+
+    if(state.lastToast){
+      const t = el('<div class="toast show"></div>');
+      t.textContent = state.lastToast;
+      root.appendChild(t);
+    }
+    wireEvents();
+  }
+
+  function renderHeader(){
+    return el(`
+      <div class="header">
+        <div class="tag">Step 10 · SMS Operations</div>
+        <h1 style="color:#fff;">SMS Check Engine</h1>
+        <div class="sub">Keeps one shared record per phone number — who's registered, who was messaged recently, and what to send next.</div>
+        <div class="badge-shared">👥 Shared database — visible to everyone using this tool</div>
+      </div>
+    `);
+  }
+
+  function renderTabs(){
+    const tabs = [
+      ["dashboard","Database"],
+      ["check","Check & Send"],
+      ["sent","Mark as Sent"],
+      ["registrations","Registrations & Opt-outs"],
+    ];
+    const wrap = el('<div class="tabs"></div>');
+    tabs.forEach(([id,label])=>{
+      const b = el(`<button class="tab ${state.tab===id?'active':''}" data-tab="${id}">${label}</button>`);
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+
+  function renderDashboard(){
+    const stats = computeStats();
+    const segRows = Object.entries(stats.bySegment).sort((a,b)=>b[1]-a[1]);
+    const wrap = el('<div style="display:flex;flex-direction:column;gap:14px;"></div>');
+
+    wrap.appendChild(el(`
+      <div class="grid-stats">
+        <div class="stat"><div class="n">${stats.total.toLocaleString()}</div><div class="l">Total records</div></div>
+        <div class="stat ok"><div class="n">${stats.registered.toLocaleString()}</div><div class="l">Registered</div></div>
+        <div class="stat warn"><div class="n">${stats.invited24.toLocaleString()}</div><div class="l">Invited last 24h</div></div>
+        <div class="stat bad"><div class="n">${stats.optOut.toLocaleString()}</div><div class="l">Opted out</div></div>
+      </div>
+    `));
+
+    if(segRows.length){
+      const table = el('<div class="card"></div>');
+      table.appendChild(el('<h2>By segment</h2>'));
+      const tw = el('<div class="table-wrap"></div>');
+      const t = el('<table><thead><tr><th>Segment</th><th>Records</th></tr></thead><tbody></tbody></table>');
+      const tbody = t.querySelector("tbody");
+      segRows.forEach(([seg,count])=>{
+        tbody.appendChild(el(`<tr><td>${escapeHtml(seg)}</td><td>${count.toLocaleString()}</td></tr>`));
+      });
+      tw.appendChild(t); table.appendChild(tw);
+      wrap.appendChild(table);
+    }
+
+    const importCard = el(`
+      <div class="card">
+        <h2>Import / update main database</h2>
+        <div class="sub">CSV, one row per HCP: <code>phone,specialty,segment</code> (segment optional). Existing phone numbers are updated, not duplicated — registration and send history are never overwritten by an import.</div>
+        <div class="field" style="margin-top:12px;">
+          <div class="file-drop" id="dbFileDrop">📄 Click to choose a CSV file, or paste below</div>
+          <input type="file" id="dbFileInput" accept=".csv,.txt" style="display:none;">
+        </div>
+        <div class="field">
+          <textarea id="dbPasteArea" placeholder="9121234567,GYN,Cold
+9351234567,Cardio,Warm"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="importDbBtn">Import / Update</button>
+          <button class="btn secondary" id="exportDbBtn">Export full database (CSV)</button>
+          <button class="btn danger" id="clearDbBtn">Clear all data</button>
+        </div>
+      </div>
+    `);
+    wrap.appendChild(importCard);
+
+    // search + preview
+    const previewCard = el(`
+      <div class="card">
+        <h2>Browse records</h2>
+        <div class="search-row">
+          <input type="text" id="dbSearch" placeholder="Search phone, specialty, or segment…">
+        </div>
+        <div id="dbPreviewWrap"></div>
+      </div>
+    `);
+    wrap.appendChild(previewCard);
+    setTimeout(()=>renderDbPreview(""), 0);
+
+    return wrap;
+  }
+
+  function renderDbPreview(query){
+    const holder = document.getElementById("dbPreviewWrap");
+    if(!holder) return;
+    const q = (query||"").toLowerCase();
+    let matches = [];
+    for(const r of state.db.values()){
+      if(!q || r.phone.includes(q) || (r.specialty||"").toLowerCase().includes(q) || (r.segment||"").toLowerCase().includes(q)){
+        matches.push(r);
+      }
+      if(matches.length >= 200) break;
+    }
+    if(state.db.size===0){
+      holder.innerHTML = '<div class="empty">No records yet — import your main database above to get started.</div>';
+      return;
+    }
+    const tw = el('<div class="table-wrap"></div>');
+    const t = el(`<table><thead><tr>
+      <th>Phone</th><th>Specialty</th><th>Segment</th><th>Registered</th><th>Invited</th><th>Last SMS</th><th>Total sent</th><th>Opt-out</th>
+    </tr></thead><tbody></tbody></table>`);
+    const tbody = t.querySelector("tbody");
+    matches.forEach(r=>{
+      tbody.appendChild(el(`<tr>
+        <td>${escapeHtml(r.phone)}</td>
+        <td>${escapeHtml(r.specialty||"—")}</td>
+        <td>${escapeHtml(r.segment||"—")}</td>
+        <td>${r.registered?'<span class="pill ok">Yes</span>':'<span class="pill mute">No</span>'}</td>
+        <td>${r.lastInvited?'<span class="pill warn">Yes</span>':'<span class="pill mute">No</span>'}</td>
+        <td>${escapeHtml(r.lastSegment||"—")}</td>
+        <td>${r.totalSent||0}</td>
+        <td>${r.optOut?'<span class="pill bad">Yes</span>':'<span class="pill mute">No</span>'}</td>
+      </tr>`));
+    });
+    holder.innerHTML = "";
+    holder.appendChild(el(`<div class="note">Showing ${matches.length} of ${state.db.size.toLocaleString()} records${matches.length>=200?" (refine your search for more)":""}.</div>`));
+    tw.appendChild(t);
+    holder.appendChild(tw);
+  }
+
+  function renderCheck(){
+    const segments = distinctSegments();
+    const wrap = el('<div style="display:flex;flex-direction:column;gap:14px;"></div>');
+
+    const formCard = el(`
+      <div class="card">
+        <h2>Run a check</h2>
+        <div class="sub">Checks against registration status, opt-outs, and whether each number was already messaged in the last 24 hours.</div>
+        <div class="row" style="margin-top:12px;">
+          <div class="field">
+            <label>Check by segment</label>
+            <select id="segmentSelect">
+              <option value="__all__">All records</option>
+              ${segments.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>— or paste a specific list of phone numbers instead (leave blank to use the segment above)</label>
+          <textarea id="checkPasteArea" placeholder="9121234567
+9351234567"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="runCheckBtn">Run check</button>
+        </div>
+      </div>
+    `);
+    wrap.appendChild(formCard);
+
+    if(state.checkSummary){
+      const s = state.checkSummary;
+      wrap.appendChild(el(`
+        <div class="grid-stats">
+          <div class="stat"><div class="n">${s.total.toLocaleString()}</div><div class="l">Checked</div></div>
+          <div class="stat ok"><div class="n">${s.send.toLocaleString()}</div><div class="l">Ready to send</div></div>
+          <div class="stat warn"><div class="n">${s.skipRecent.toLocaleString()}</div><div class="l">Skip · sent &lt;24h</div></div>
+          <div class="stat bad"><div class="n">${s.skipReg.toLocaleString()}</div><div class="l">Skip · registered</div></div>
+        </div>
+      `));
+
+      const resultsCard = el(`
+        <div class="card">
+          <h2>Results</h2>
+          <div class="btn-row" style="margin-bottom:12px;">
+            <button class="btn secondary" id="downloadCleanBtn">Download clean send list (CSV)</button>
+            <button class="btn secondary" id="downloadFullBtn">Download full report (CSV)</button>
+          </div>
+          <div class="table-wrap" id="checkResultsTable"></div>
+          <div class="note">Showing up to 300 rows inline. Use the downloads above for the complete list${state.checkSummary.skipOptOut?` (skip · opted out: ${state.checkSummary.skipOptOut})`:""}${state.checkSummary.notFound?`, not-found in database: ${state.checkSummary.notFound}`:""}.</div>
+        </div>
+      `);
+      wrap.appendChild(resultsCard);
+      setTimeout(()=>renderCheckTable(),0);
+    }
+
+    return wrap;
+  }
+
+  function renderCheckTable(){
+    const holder = document.getElementById("checkResultsTable");
+    if(!holder || !state.checkResults) return;
+    const rows = state.checkResults.slice(0,300);
+    const t = el(`<table><thead><tr>
+      <th>Phone</th><th>Specialty</th><th>Segment</th><th>Registered</th><th>Invited</th><th>Hours since</th><th>Last SMS</th><th>Total sent</th><th>Recommendation</th>
+    </tr></thead><tbody></tbody></table>`);
+    const tbody = t.querySelector("tbody");
+    rows.forEach(r=>{
+      const pillClass = r.action==="send" ? "ok" : (r.reason==="Opted out" ? "bad" : "warn");
+      tbody.appendChild(el(`<tr>
+        <td>${escapeHtml(r.phone)}</td>
+        <td>${escapeHtml(r.specialty||"—")}</td>
+        <td>${escapeHtml(r.segment||"—")}</td>
+        <td>${r.registered?"Yes":"No"}</td>
+        <td>${r.invited?"Yes":"No"}</td>
+        <td>${r.hoursSince===null?"—":r.hoursSince+"h"}</td>
+        <td>${escapeHtml(r.lastSegment||"—")}</td>
+        <td>${r.totalSent||0}</td>
+        <td><span class="pill ${pillClass}">${r.action==="send"?"Send":r.reason}</span></td>
+      </tr>`));
+    });
+    holder.innerHTML = "";
+    holder.appendChild(t);
+  }
+
+  function renderSent(){
+    const wrap = el('<div style="display:flex;flex-direction:column;gap:14px;"></div>');
+    wrap.appendChild(el(`
+      <div class="card">
+        <h2>Record a completed send</h2>
+        <div class="sub">Paste the phone numbers you just sent (e.g. the clean list you downloaded from Check &amp; Send), give the message a title, and this updates each number's last-invited time and history. Numbers not yet in the database are added automatically.</div>
+        <div class="field" style="margin-top:12px;">
+          <label>SMS title / segment label</label>
+          <input type="text" id="sentTitle" placeholder="e.g. GYN Cold Wave 1">
+        </div>
+        <div class="field">
+          <label>Phone numbers sent (one per line, or upload a CSV)</label>
+          <div class="file-drop" id="sentFileDrop">📄 Click to choose a CSV file, or paste below</div>
+          <input type="file" id="sentFileInput" accept=".csv,.txt" style="display:none;">
+          <textarea id="sentPasteArea" placeholder="9121234567
+9351234567" style="margin-top:8px;"></textarea>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="recordSentBtn">Record send</button>
+        </div>
+      </div>
+    `));
+    return wrap;
+  }
+
+  function renderRegistrations(){
+    const wrap = el('<div style="display:flex;flex-direction:column;gap:14px;"></div>');
+    wrap.appendChild(el(`
+      <div class="card">
+        <h2>Mark as registered</h2>
+        <div class="sub">Paste or upload phone numbers from your registration list. These are excluded from every future check automatically.</div>
+        <div class="field" style="margin-top:12px;">
+          <div class="file-drop" id="regFileDrop">📄 Click to choose a CSV file, or paste below</div>
+          <input type="file" id="regFileInput" accept=".csv,.txt" style="display:none;">
+          <textarea id="regPasteArea" placeholder="9121234567
+9351234567" style="margin-top:8px;"></textarea>
+        </div>
+        <div class="btn-row"><button class="btn" id="markRegBtn">Mark as registered</button></div>
+      </div>
+    `));
+    wrap.appendChild(el(`
+      <div class="card">
+        <h2>Mark as opted out</h2>
+        <div class="sub">Numbers that replied STOP or asked not to be contacted. Excluded from every future check, permanently.</div>
+        <div class="field" style="margin-top:12px;">
+          <div class="file-drop" id="optFileDrop">📄 Click to choose a CSV file, or paste below</div>
+          <input type="file" id="optFileInput" accept=".csv,.txt" style="display:none;">
+          <textarea id="optPasteArea" placeholder="9121234567" style="margin-top:8px;"></textarea>
+        </div>
+        <div class="btn-row"><button class="btn danger" id="markOptBtn">Mark as opted out</button></div>
+      </div>
+    `));
+    return wrap;
+  }
+
+  function escapeHtml(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // ================= EVENTS =================
+  function wireEvents(){
+    document.querySelectorAll("[data-tab]").forEach(b=>{
+      b.onclick = ()=>{ state.tab = b.getAttribute("data-tab"); render(); };
+    });
+
+    // dashboard
+    const dbSearch = document.getElementById("dbSearch");
+    if(dbSearch) dbSearch.oninput = (e)=>renderDbPreview(e.target.value);
+
+    const dbFileDrop = document.getElementById("dbFileDrop");
+    const dbFileInput = document.getElementById("dbFileInput");
+    if(dbFileDrop) dbFileDrop.onclick = ()=>dbFileInput.click();
+    if(dbFileInput) dbFileInput.onchange = async ()=>{
+      const f = dbFileInput.files[0]; if(!f) return;
+      const text = await readFileAsText(f);
+      document.getElementById("dbPasteArea").value = text;
+    };
+
+    const importDbBtn = document.getElementById("importDbBtn");
+    if(importDbBtn) importDbBtn.onclick = async ()=>{
+      const text = document.getElementById("dbPasteArea").value;
+      if(!text.trim()){ toast("Paste or upload data first"); return; }
+      importDbBtn.disabled = true; importDbBtn.textContent = "Importing…";
+      const { added, updated, skipped } = importDatabase(text);
+      const ok = await saveDB();
+      importDbBtn.disabled = false; importDbBtn.textContent = "Import / Update";
+      if(ok) toast(`✓ ${added} added, ${updated} updated${skipped?`, ${skipped} skipped`:""}`);
+      render();
+    };
+
+    const exportDbBtn = document.getElementById("exportDbBtn");
+    if(exportDbBtn) exportDbBtn.onclick = ()=>{
+      const rows = Array.from(state.db.values()).map(r=>[
+        r.phone, r.specialty, r.segment, r.registered?"Yes":"No", r.optOut?"Yes":"No",
+        r.lastInvited? new Date(r.lastInvited).toISOString() : "", r.lastSegment, r.totalSent||0
+      ]);
+      downloadCSV("step10_main_database.csv",
+        ["phone","specialty","segment","registered","opt_out","last_invited","last_sms_title","total_sent"], rows);
+    };
+
+    const clearDbBtn = document.getElementById("clearDbBtn");
+    if(clearDbBtn) clearDbBtn.onclick = async ()=>{
+      if(!confirm("This clears the entire shared database for everyone. This can't be undone. Continue?")) return;
+      state.db = new Map();
+      await saveDB();
+      toast("Database cleared");
+      render();
+    };
+
+    // check tab
+    const segmentSelect = document.getElementById("segmentSelect");
+    const runCheckBtn = document.getElementById("runCheckBtn");
+    if(runCheckBtn) runCheckBtn.onclick = ()=>{
+      const pasted = document.getElementById("checkPasteArea").value;
+      const list = pasted.trim() ? parseLines(pasted).map(l=>parseCSVRow(l)[0]) : null;
+      const seg = segmentSelect ? segmentSelect.value : "__all__";
+      const { results, summary } = runCheck(list, seg);
+      state.checkResults = results;
+      state.checkSummary = summary;
+      render();
+    };
+
+    const downloadCleanBtn = document.getElementById("downloadCleanBtn");
+    if(downloadCleanBtn) downloadCleanBtn.onclick = ()=>{
+      const rows = state.checkResults.filter(r=>r.action==="send").map(r=>[r.phone, r.specialty, r.segment]);
+      downloadCSV("clean_send_list.csv", ["phone","specialty","segment"], rows);
+    };
+    const downloadFullBtn = document.getElementById("downloadFullBtn");
+    if(downloadFullBtn) downloadFullBtn.onclick = ()=>{
+      const rows = state.checkResults.map(r=>[
+        r.phone, r.specialty, r.segment, r.registered?"Yes":"No", r.invited?"Yes":"No",
+        r.hoursSince===null?"":r.hoursSince, r.lastSegment, r.totalSent, r.action, r.reason
+      ]);
+      downloadCSV("check_report.csv",
+        ["phone","specialty","segment","registered","invited","hours_since_last","last_sms_title","total_sent","action","reason"], rows);
+    };
+
+    // sent tab
+    const sentFileDrop = document.getElementById("sentFileDrop");
+    const sentFileInput = document.getElementById("sentFileInput");
+    if(sentFileDrop) sentFileDrop.onclick = ()=>sentFileInput.click();
+    if(sentFileInput) sentFileInput.onchange = async ()=>{
+      const f = sentFileInput.files[0]; if(!f) return;
+      document.getElementById("sentPasteArea").value = await readFileAsText(f);
+    };
+    const recordSentBtn = document.getElementById("recordSentBtn");
+    if(recordSentBtn) recordSentBtn.onclick = async ()=>{
+      const title = document.getElementById("sentTitle").value.trim();
+      const text = document.getElementById("sentPasteArea").value;
+      if(!text.trim()){ toast("Paste or upload the sent list first"); return; }
+      if(!title){ toast("Give the send a title first"); return; }
+      recordSentBtn.disabled = true; recordSentBtn.textContent = "Recording…";
+      const { updated, created, skipped } = recordSend(text, title);
+      const ok = await saveDB();
+      recordSentBtn.disabled = false; recordSentBtn.textContent = "Record send";
+      if(ok) toast(`✓ Recorded — ${updated} updated, ${created} new${skipped?`, ${skipped} skipped`:""}`);
+      render();
+    };
+
+    // registrations tab
+    wireUploadPaste("regFileDrop","regFileInput","regPasteArea");
+    wireUploadPaste("optFileDrop","optFileInput","optPasteArea");
+
+    const markRegBtn = document.getElementById("markRegBtn");
+    if(markRegBtn) markRegBtn.onclick = async ()=>{
+      const text = document.getElementById("regPasteArea").value;
+      if(!text.trim()){ toast("Paste or upload numbers first"); return; }
+      markRegBtn.disabled = true;
+      const { updated, created, skipped } = markFlag(text, "registered");
+      const ok = await saveDB();
+      markRegBtn.disabled = false;
+      if(ok) toast(`✓ ${updated+created} marked registered`);
+      render();
+    };
+    const markOptBtn = document.getElementById("markOptBtn");
+    if(markOptBtn) markOptBtn.onclick = async ()=>{
+      const text = document.getElementById("optPasteArea").value;
+      if(!text.trim()){ toast("Paste or upload numbers first"); return; }
+      markOptBtn.disabled = true;
+      const { updated, created, skipped } = markFlag(text, "optOut");
+      const ok = await saveDB();
+      markOptBtn.disabled = false;
+      if(ok) toast(`✓ ${updated+created} marked opted out`);
+      render();
+    };
+  }
+
+  function wireUploadPaste(dropId, inputId, areaId){
+    const drop = document.getElementById(dropId);
+    const input = document.getElementById(inputId);
+    if(drop) drop.onclick = ()=>input.click();
+    if(input) input.onchange = async ()=>{
+      const f = input.files[0]; if(!f) return;
+      document.getElementById(areaId).value = await readFileAsText(f);
+    };
+  }
+
+  loadDB();
+})();
+</script>
